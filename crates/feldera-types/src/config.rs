@@ -20,6 +20,7 @@ use crate::transport::nexmark::NexmarkInputConfig;
 use crate::transport::postgres::{PostgresReaderConfig, PostgresWriterConfig};
 use crate::transport::pubsub::PubSubInputConfig;
 use crate::transport::redis::RedisOutputConfig;
+use crate::transport::s2::S2InputConfig;
 use crate::transport::s3::S3InputConfig;
 use crate::transport::url::UrlInputConfig;
 use core::fmt;
@@ -33,8 +34,8 @@ use std::path::Path;
 use std::str::FromStr;
 use std::time::Duration;
 use std::{borrow::Cow, cmp::max, collections::BTreeMap};
-use utoipa::ToSchema;
 use utoipa::openapi::{ObjectBuilder, OneOfBuilder, Ref, RefOr, Schema, SchemaType};
+use utoipa::ToSchema;
 
 const DEFAULT_MAX_PARALLEL_CONNECTOR_INIT: u64 = 10;
 
@@ -1553,6 +1554,7 @@ pub enum TransportConfig {
     KafkaInput(KafkaInputConfig),
     KafkaOutput(KafkaOutputConfig),
     PubSubInput(PubSubInputConfig),
+    S2Input(S2InputConfig),
     UrlInput(UrlInputConfig),
     S3Input(S3InputConfig),
     DeltaTableInput(DeltaTableReaderConfig),
@@ -1582,6 +1584,7 @@ impl TransportConfig {
             TransportConfig::KafkaInput(_) => "kafka_input".to_string(),
             TransportConfig::KafkaOutput(_) => "kafka_output".to_string(),
             TransportConfig::PubSubInput(_) => "pub_sub_input".to_string(),
+            TransportConfig::S2Input(_) => "s2_input".to_string(),
             TransportConfig::UrlInput(_) => "url_input".to_string(),
             TransportConfig::S3Input(_) => "s3_input".to_string(),
             TransportConfig::DeltaTableInput(_) => "delta_table_input".to_string(),

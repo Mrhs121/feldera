@@ -1,4 +1,4 @@
-use anyhow::{Result as AnyResult, anyhow};
+use anyhow::{anyhow, Result as AnyResult};
 use feldera_adapterlib::transport::{AsyncErrorCallback, OutputEndpoint};
 use feldera_types::transport::redis::RedisOutputConfig;
 use redis::{ConnectionInfo, Pipeline};

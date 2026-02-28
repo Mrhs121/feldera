@@ -5,35 +5,34 @@ use crate::test::{
     generate_test_batches, mock_input_pipeline, wait, wait_for_output_count,
     wait_for_output_ordered, wait_for_output_unordered,
 };
-use crate::transport::kafka::ft::input::{BACKPRESSURE, Metadata};
+use crate::transport::kafka::ft::input::{Metadata, BACKPRESSURE};
 use crate::transport::{input_transport_config_to_endpoint, output_transport_config_to_endpoint};
 use crate::{
-    Controller, InputConsumer, ParseError,
     test::{
-        TestStruct,
         kafka::{KafkaResources, TestProducer},
-        test_circuit,
+        test_circuit, TestStruct,
     },
+    Controller, InputConsumer, ParseError,
 };
 use crate::{InputBuffer, InputReader, Parser, TransportInputEndpoint};
 use anyhow::Error as AnyError;
 use crossbeam::sync::{Parker, Unparker};
 use csv::{ReaderBuilder as CsvReaderBuilder, WriterBuilder as CsvWriterBuilder};
 use dbsp::operator::StagedBuffers;
-use feldera_adapterlib::ConnectorMetadata;
 use feldera_adapterlib::format::BufferSize;
 use feldera_adapterlib::transport::{Resume, Watermark};
+use feldera_adapterlib::ConnectorMetadata;
 use feldera_macros::IsNone;
 use feldera_sqllib::{ByteArray, SqlString, Variant};
 use feldera_types::config::{
-    ConnectorConfig, FormatConfig, FtModel, InputEndpointConfig, OutputBufferConfig,
-    TransportConfig, default_max_queued_records,
+    default_max_queued_records, ConnectorConfig, FormatConfig, FtModel, InputEndpointConfig,
+    OutputBufferConfig, TransportConfig,
 };
 use feldera_types::deserialize_table_record;
 use feldera_types::program_schema::{ColumnType, Field, Relation, SqlIdentifier};
 use feldera_types::secret_resolver::default_secrets_directory;
 use feldera_types::transport::kafka::{
-    KafkaInputConfig, KafkaLogLevel, KafkaStartFromConfig, default_redpanda_server,
+    default_redpanda_server, KafkaInputConfig, KafkaLogLevel, KafkaStartFromConfig,
 };
 use parquet::data_type::AsBytes;
 use proptest::prelude::*;
@@ -42,7 +41,7 @@ use rdkafka::message::{BorrowedMessage, Header, Headers};
 use rdkafka::producer::BaseRecord;
 use rdkafka::{Message, Timestamp};
 use rmpv::Value as RmpValue;
-use serde_json::{Value as JsonValue, json};
+use serde_json::{json, Value as JsonValue};
 use size_of::SizeOf;
 use std::any::Any;
 use std::borrow::Cow;
@@ -56,16 +55,16 @@ use std::thread::sleep;
 use std::{
     mem,
     sync::{
-        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
     },
     time::{Duration, Instant},
 };
 use tempfile::TempDir;
 use tracing::info;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 
 fn init_test_logger() {
     let _ = tracing_subscriber::registry()

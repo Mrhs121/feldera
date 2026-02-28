@@ -8,10 +8,9 @@
 mod input;
 mod output;
 
-use anyhow::{Context, Result as AnyResult, bail};
-use feldera_types::transport::kafka::{KafkaLogLevel, default_redpanda_server};
+use anyhow::{bail, Context, Result as AnyResult};
+use feldera_types::transport::kafka::{default_redpanda_server, KafkaLogLevel};
 use rdkafka::{
-    ClientConfig, ClientContext, Offset, TopicPartitionList,
     client::Client as KafkaClient,
     consumer::{BaseConsumer, Consumer, ConsumerContext},
     error::{KafkaError, KafkaResult},
@@ -19,6 +18,7 @@ use rdkafka::{
     producer::{Producer, ProducerContext, ThreadedProducer},
     types::RDKafkaErrorCode,
     util::Timeout,
+    ClientConfig, ClientContext, Offset, TopicPartitionList,
 };
 use std::{
     collections::BTreeMap,

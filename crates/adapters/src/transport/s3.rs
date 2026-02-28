@@ -1,18 +1,18 @@
 use super::InputReaderCommand;
 use crate::transport::InputEndpoint;
 use crate::{
-    InputBuffer, InputConsumer, InputReader, Parser, TransportInputEndpoint, format::StreamSplitter,
+    format::StreamSplitter, InputBuffer, InputConsumer, InputReader, Parser, TransportInputEndpoint,
 };
 use anyhow::anyhow;
-use anyhow::{Result as AnyResult, bail};
-use async_channel::{Receiver, SendError, Sender, bounded, unbounded};
+use anyhow::{bail, Result as AnyResult};
+use async_channel::{bounded, unbounded, Receiver, SendError, Sender};
 use aws_sdk_s3::operation::{get_object::GetObjectOutput, list_objects_v2::ListObjectsV2Error};
 use chrono::{DateTime, Utc};
 use dbsp::circuit::tokio::TOKIO;
 use feldera_adapterlib::{
-    PipelineState,
     format::BufferSize,
-    transport::{Resume, Watermark, parse_resume_info},
+    transport::{parse_resume_info, Resume, Watermark},
+    PipelineState,
 };
 use feldera_types::transport::s3::S3InputConfig;
 use feldera_types::{config::FtModel, program_schema::Relation};
@@ -27,9 +27,9 @@ use std::{
     sync::Arc,
     thread,
 };
+use tokio::sync::watch::{channel as watch_channel, error::RecvError, Receiver as WatchReceiver};
 use tokio::sync::Mutex;
-use tokio::sync::watch::{Receiver as WatchReceiver, channel as watch_channel, error::RecvError};
-use tracing::{Instrument, error, info_span};
+use tracing::{error, info_span, Instrument};
 
 /// Number of object paths in the queue.
 /// Must be small, since these paths are considered in-progress and
@@ -961,7 +961,7 @@ fn to_s3_config(config: &Arc<S3InputConfig>) -> aws_sdk_s3::Config {
 #[cfg(test)]
 mod test {
     use crate::{
-        test::{MockDeZSet, MockInputConsumer, MockInputParser, mock_parser_pipeline, wait},
+        test::{mock_parser_pipeline, wait, MockDeZSet, MockInputConsumer, MockInputParser},
         transport::s3::{S3InputConfig, S3InputReader},
     };
     use aws_sdk_s3::{

@@ -683,6 +683,7 @@ pub fn generate_program_info(
                 | TransportConfig::NatsInput(_)
                 | TransportConfig::KafkaInput(_)
                 | TransportConfig::PubSubInput(_)
+                | TransportConfig::S2Input(_)
                 | TransportConfig::UrlInput(_)
                 | TransportConfig::S3Input(_)
                 | TransportConfig::DeltaTableInput(_)

@@ -37,6 +37,7 @@ pub mod http;
 pub mod url;
 
 pub mod clock;
+mod s2;
 mod s3;
 
 #[cfg(feature = "with-kafka")]
@@ -70,6 +71,7 @@ use crate::transport::nats::NatsInputEndpoint;
 
 #[cfg(feature = "with-nexmark")]
 use crate::transport::nexmark::NexmarkEndpoint;
+use crate::transport::s2::S2InputEndpoint;
 use crate::transport::s3::S3InputEndpoint;
 use crate::transport::url::UrlInputEndpoint;
 use feldera_datagen::GeneratorEndpoint;
@@ -102,6 +104,7 @@ pub fn input_transport_config_to_endpoint(
         TransportConfig::PubSubInput(config) => Box::new(PubSubInputEndpoint::new(config.clone())?),
         #[cfg(not(feature = "with-pubsub"))]
         TransportConfig::PubSubInput(_) => return Ok(None),
+        TransportConfig::S2Input(config) => Box::new(S2InputEndpoint::new(config.clone())?),
         TransportConfig::UrlInput(config) => Box::new(UrlInputEndpoint::new(config)),
         TransportConfig::S3Input(config) => Box::new(S3InputEndpoint::new(config)?),
         TransportConfig::Datagen(config) => Box::new(GeneratorEndpoint::new(config.clone())),

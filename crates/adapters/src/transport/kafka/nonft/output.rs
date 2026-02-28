@@ -1,18 +1,18 @@
 use crate::transport::kafka::{
-    DeferredLogging, MemoryUseReporter, PemToLocation, build_headers, generate_oauthbearer_token,
-    kafka_send, rdkafka_loglevel_from, validate_aws_msk_region,
+    build_headers, generate_oauthbearer_token, kafka_send, rdkafka_loglevel_from,
+    validate_aws_msk_region, DeferredLogging, MemoryUseReporter, PemToLocation,
 };
 use crate::{AsyncErrorCallback, OutputEndpoint};
-use anyhow::{Error as AnyError, Result as AnyResult, anyhow, bail};
+use anyhow::{anyhow, bail, Error as AnyError, Result as AnyResult};
 use feldera_types::transport::kafka::KafkaOutputConfig;
 use rdkafka::client::OAuthToken;
 use rdkafka::message::{Header, OwnedHeaders};
 use rdkafka::{
-    ClientConfig, ClientContext,
     config::FromClientConfigAndContext,
     error::KafkaError,
     producer::{BaseRecord, DeliveryResult, Producer, ProducerContext, ThreadedProducer},
     types::RDKafkaErrorCode,
+    ClientConfig, ClientContext,
 };
 use std::collections::HashMap;
 use std::error::Error;
@@ -268,8 +268,8 @@ impl OutputEndpoint for KafkaOutputEndpoint {
 #[cfg(test)]
 mod test {
     use crate::{
+        test::{init_test_logger, test_circuit, TestStruct},
         Controller,
-        test::{TestStruct, init_test_logger, test_circuit},
     };
     use serde_json::json;
     use tracing::info;

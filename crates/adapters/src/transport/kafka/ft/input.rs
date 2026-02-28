@@ -1,25 +1,25 @@
-use crate::transport::InputCommandReceiver;
-use crate::transport::kafka::MemoryUseReporter;
 use crate::transport::kafka::ft::count_partitions_in_topic;
+use crate::transport::kafka::MemoryUseReporter;
 use crate::transport::kafka::{generate_oauthbearer_token, validate_aws_msk_region};
-use crate::{InputBuffer, Parser};
+use crate::transport::InputCommandReceiver;
 use crate::{
-    InputConsumer, TransportInputEndpoint,
     transport::{
+        kafka::{rdkafka_loglevel_from, refine_kafka_error, DeferredLogging},
         InputReader,
-        kafka::{DeferredLogging, rdkafka_loglevel_from, refine_kafka_error},
     },
+    InputConsumer, TransportInputEndpoint,
 };
-use anyhow::{Error as AnyError, Result as AnyResult, anyhow, bail};
+use crate::{InputBuffer, Parser};
+use anyhow::{anyhow, bail, Error as AnyError, Result as AnyResult};
 use chrono::{DateTime, Utc};
 use crossbeam::queue::ArrayQueue;
 use crossbeam::sync::{Parker, Unparker};
 use dbsp::operator::StagedBuffers;
-use feldera_adapterlib::ConnectorMetadata;
 use feldera_adapterlib::format::BufferSize;
 use feldera_adapterlib::transport::{
-    InputEndpoint, InputReaderCommand, Resume, Watermark, parse_resume_info,
+    parse_resume_info, InputEndpoint, InputReaderCommand, Resume, Watermark,
 };
+use feldera_adapterlib::ConnectorMetadata;
 use feldera_sqllib::{ByteArray, SqlString, Timestamp, Variant};
 use feldera_types::config::FtModel;
 use feldera_types::program_schema::Relation;
@@ -30,14 +30,14 @@ use rdkafka::config::RDKafkaLogLevel;
 use rdkafka::consumer::base_consumer::PartitionQueue;
 use rdkafka::message::{BorrowedMessage, Headers};
 use rdkafka::{
-    ClientConfig, ClientContext, Message,
     config::FromClientConfigAndContext,
     consumer::{BaseConsumer, Consumer, ConsumerContext},
     error::{KafkaError, KafkaResult},
+    ClientConfig, ClientContext, Message,
 };
 use rdkafka::{Offset, TopicPartitionList};
 use serde::{Deserialize, Serialize};
-use smallvec::{SmallVec, smallvec};
+use smallvec::{smallvec, SmallVec};
 #[cfg(test)]
 use std::collections::BTreeSet;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -52,7 +52,7 @@ use std::{
     thread::spawn,
     time::Duration,
 };
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tracing::span::EnteredSpan;
 use tracing::{debug, info_span, warn};
 use xxhash_rust::xxh3::Xxh3Default;

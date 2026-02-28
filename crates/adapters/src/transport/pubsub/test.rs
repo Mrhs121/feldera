@@ -1,8 +1,8 @@
 use std::{collections::HashMap, fmt::Debug, io, net::TcpStream, thread::sleep, time::Duration};
 
 use crate::test::{
-    TestStruct, init_test_logger, mock_input_pipeline, wait_for_output_ordered,
-    wait_for_output_unordered,
+    init_test_logger, mock_input_pipeline, wait_for_output_ordered, wait_for_output_unordered,
+    TestStruct,
 };
 use csv::WriterBuilder;
 use dbsp::circuit::tokio::TOKIO;
@@ -17,7 +17,7 @@ use google_cloud_pubsub::{
 };
 use proptest::prelude::*;
 use serde::Serialize;
-use serde_json::{Map, json};
+use serde_json::{json, Map};
 use tracing::info;
 
 static EMULATOR_PROJECT_ID: &str = "feldera-test";

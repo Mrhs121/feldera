@@ -34,10 +34,10 @@ mod config_utils;
 mod test;
 
 use crate::{
-    InputConsumer, InputEndpoint, InputReader, Parser, TransportInputEndpoint,
     transport::{InputQueue, InputReaderCommand},
+    InputConsumer, InputEndpoint, InputReader, Parser, TransportInputEndpoint,
 };
-use anyhow::{Context, Error as AnyError, Result as AnyResult, anyhow};
+use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use async_nats::{
     self,
     jetstream::{self, consumer as nats_consumer},
@@ -58,15 +58,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::cmp;
 use std::hash::Hasher;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use tokio::{
     select,
-    sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
 };
 use tokio_util::sync::CancellationToken;
-use tracing::{Instrument, error, info, info_span};
+use tracing::{error, info, info_span, Instrument};
 use xxhash_rust::xxh3::Xxh3Default;
 
 type NatsConsumerConfig = nats_consumer::pull::OrderedConfig;

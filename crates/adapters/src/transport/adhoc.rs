@@ -1,11 +1,11 @@
 use crate::catalog::ArrowStream;
 use crate::transport::{InputEndpoint, InputQueue, InputReaderCommand};
 use crate::{
-    ControllerError, InputConsumer, PipelineState, TransportInputEndpoint, server::PipelineError,
-    transport::InputReader,
+    server::PipelineError, transport::InputReader, ControllerError, InputConsumer, PipelineState,
+    TransportInputEndpoint,
 };
 use crate::{InputBuffer, Parser};
-use anyhow::{Error as AnyError, Result as AnyResult, anyhow};
+use anyhow::{anyhow, Error as AnyError, Result as AnyResult};
 use arrow::array::RecordBatch;
 use arrow::datatypes::Schema;
 use atomic::Atomic;
@@ -19,15 +19,15 @@ use feldera_types::program_schema::Relation;
 use feldera_types::transport::adhoc::AdHocInputConfig;
 use futures::future::{BoxFuture, FutureExt};
 use futures_util::StreamExt;
-use parquet::arrow::AsyncArrowWriter;
 use parquet::arrow::async_writer::AsyncFileWriter;
+use parquet::arrow::AsyncArrowWriter;
 use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use std::{
     hash::Hasher,
-    sync::{Arc, Mutex, atomic::Ordering},
+    sync::{atomic::Ordering, Arc, Mutex},
     time::Duration,
 };
 use tokio::{

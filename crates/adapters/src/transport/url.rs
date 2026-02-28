@@ -1,16 +1,16 @@
 use super::{
     InputConsumer, InputEndpoint, InputReader, InputReaderCommand, TransportInputEndpoint,
 };
-use crate::{InputBuffer, Parser, ensure_default_crypto_provider, format::StreamSplitter};
+use crate::{ensure_default_crypto_provider, format::StreamSplitter, InputBuffer, Parser};
 use actix::System;
 use actix_web::http::StatusCode;
 use actix_web::{
     dev::{Decompress, Payload},
-    http::header::{ByteRangeSpec, CONTENT_RANGE, ContentRangeSpec, Range as ActixRange},
+    http::header::{ByteRangeSpec, ContentRangeSpec, Range as ActixRange, CONTENT_RANGE},
 };
-use anyhow::{Result as AnyResult, anyhow, bail};
+use anyhow::{anyhow, bail, Result as AnyResult};
 use awc::error::HeaderValue;
-use awc::{Client, ClientResponse, Connector, http::header::HeaderMap};
+use awc::{http::header::HeaderMap, Client, ClientResponse, Connector};
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use feldera_adapterlib::format::BufferSize;
@@ -18,11 +18,11 @@ use feldera_adapterlib::transport::{InputCommandReceiver, Resume, Watermark};
 use feldera_types::config::FtModel;
 use feldera_types::program_schema::Relation;
 use feldera_types::transport::url::UrlInputConfig;
-use futures::{StreamExt, future::OptionFuture};
+use futures::{future::OptionFuture, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::thread;
 use std::{
-    cmp::{Ordering, min},
+    cmp::{min, Ordering},
     collections::VecDeque,
     hash::Hasher,
     ops::Range,
@@ -32,8 +32,8 @@ use std::{
 };
 use tokio::{
     select,
-    sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
-    time::{Instant, sleep_until},
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    time::{sleep_until, Instant},
 };
 use tracing::{info_span, warn};
 use xxhash_rust::xxh3::Xxh3Default;
@@ -474,15 +474,16 @@ struct Metadata {
 mod test {
     use crate::{
         test::{
-            DEFAULT_TIMEOUT_MS, MockDeZSet, MockInputConsumer, MockInputParser,
-            mock_input_pipeline, wait,
+            mock_input_pipeline, wait, MockDeZSet, MockInputConsumer, MockInputParser,
+            DEFAULT_TIMEOUT_MS,
         },
         transport::InputReader,
     };
     use actix::System;
     use actix_web::{
-        App, FromRequest, Handler, HttpResponse, HttpServer, Responder, Result, middleware,
+        middleware,
         web::{self, Bytes},
+        App, FromRequest, Handler, HttpResponse, HttpServer, Responder, Result,
     };
     use async_stream::stream;
     use feldera_types::deserialize_without_context;

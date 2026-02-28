@@ -1,5 +1,5 @@
 use crate::test::{
-    DEFAULT_TIMEOUT_MS, TestStruct, init_test_logger, mock_input_pipeline, test_circuit, wait,
+    init_test_logger, mock_input_pipeline, test_circuit, wait, TestStruct, DEFAULT_TIMEOUT_MS,
 };
 use crate::{Controller, PipelineConfig};
 use anyhow::Result as AnyResult;
@@ -596,7 +596,7 @@ format:
         Ok(_) => panic!("Expected stream lookup to fail"),
         Err(err) => {
             let err_msg = format!("{err:#}"); // Full error chain
-            // The error message should contain the stream name for easy debugging
+                                              // The error message should contain the stream name for easy debugging
             assert!(
                 err_msg.contains(nonexistent_stream),
                 "Error message should contain stream name, got: {err_msg}"
@@ -659,7 +659,7 @@ format:
 
 mod util {
     use crate::test::wait;
-    use anyhow::{Result as AnyResult, anyhow};
+    use anyhow::{anyhow, Result as AnyResult};
     use async_nats::Client;
     use serde::Deserialize;
     use std::env;
