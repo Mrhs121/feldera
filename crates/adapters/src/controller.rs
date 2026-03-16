@@ -6289,9 +6289,6 @@ impl ControllerInner {
     pub fn can_suspend(&self) -> Result<(), SuspendError> {
         // First, check for reasons we can't suspend.
         let mut permanent = Vec::new();
-        #[cfg(not(feature = "feldera-enterprise"))]
-        #[cfg(not(test))]
-        permanent.push(PermanentSuspendError::EnterpriseFeature);
         if self.status.pipeline_config.global.storage.is_none() {
             permanent.push(PermanentSuspendError::StorageRequired);
         }

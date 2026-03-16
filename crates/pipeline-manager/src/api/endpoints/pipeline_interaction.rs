@@ -961,32 +961,20 @@ pub(crate) async fn sync_checkpoint(
     path: web::Path<String>,
     request: HttpRequest,
 ) -> Result<HttpResponse, ManagerError> {
-    #[cfg(not(feature = "feldera-enterprise"))]
-    {
-        let _ = (state, tenant_id, path.into_inner(), request);
-        Err(CommonError::EnterpriseFeature {
-            feature: "checkpoint".to_string(),
-        }
-        .into())
-    }
-
-    #[cfg(feature = "feldera-enterprise")]
-    {
-        let pipeline_name = path.into_inner();
-        state
-            .runner
-            .forward_http_request_to_pipeline_by_name(
-                _client.as_ref(),
-                *tenant_id,
-                &pipeline_name,
-                Method::POST,
-                "checkpoint/sync",
-                request.query_string(),
-                Some(Duration::from_secs(120)),
-                None,
-            )
-            .await
-    }
+    let pipeline_name = path.into_inner();
+    state
+        .runner
+        .forward_http_request_to_pipeline_by_name(
+            _client.as_ref(),
+            *tenant_id,
+            &pipeline_name,
+            Method::POST,
+            "checkpoint/sync",
+            request.query_string(),
+            Some(Duration::from_secs(120)),
+            None,
+        )
+        .await
 }
 
 /// Checkpoint Now
@@ -1030,32 +1018,20 @@ pub(crate) async fn checkpoint_pipeline(
     path: web::Path<String>,
     request: HttpRequest,
 ) -> Result<HttpResponse, ManagerError> {
-    #[cfg(not(feature = "feldera-enterprise"))]
-    {
-        let _ = (state, tenant_id, path.into_inner(), request);
-        Err(CommonError::EnterpriseFeature {
-            feature: "checkpoint".to_string(),
-        }
-        .into())
-    }
-
-    #[cfg(feature = "feldera-enterprise")]
-    {
-        let pipeline_name = path.into_inner();
-        state
-            .runner
-            .forward_http_request_to_pipeline_by_name(
-                _client.as_ref(),
-                *tenant_id,
-                &pipeline_name,
-                Method::POST,
-                "checkpoint",
-                request.query_string(),
-                Some(Duration::from_secs(120)),
-                None,
-            )
-            .await
-    }
+    let pipeline_name = path.into_inner();
+    state
+        .runner
+        .forward_http_request_to_pipeline_by_name(
+            _client.as_ref(),
+            *tenant_id,
+            &pipeline_name,
+            Method::POST,
+            "checkpoint",
+            request.query_string(),
+            Some(Duration::from_secs(120)),
+            None,
+        )
+        .await
 }
 
 /// Get Checkpoint Status

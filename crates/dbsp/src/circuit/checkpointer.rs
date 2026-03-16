@@ -1,7 +1,9 @@
 //! Logic to manage persistent checkpoints for a circuit.
 
-use crate::dynamic::{self, data::DataTyped};
-use crate::{Error, NumEntries, TypedBox};
+use crate::dynamic::data::DataTrait;
+use crate::dynamic::rkyv::{DeserializableDyn, SerializeDyn};
+use crate::dynamic::{self, data::DataTyped, Erase};
+use crate::{DBData, Error, NumEntries, TypedBox};
 use feldera_types::checkpoint::CheckpointMetadata;
 use feldera_types::constants::{
     ACTIVATION_MARKER_FILE, ADHOC_TEMP_DIR, CHECKPOINT_DEPENDENCIES, CHECKPOINT_FILE_NAME,
@@ -331,31 +333,52 @@ pub trait Checkpoint {
 
 impl Checkpoint for isize {
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        Ok(self.to_le_bytes().to_vec())
     }
 
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        *self = isize::from_le_bytes(data.try_into().map_err(|_| {
+            Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint restore",
+                path: None,
+            })
+        })?);
+        Ok(())
     }
 }
 
 impl Checkpoint for usize {
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        Ok(self.to_le_bytes().to_vec())
     }
 
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        *self = usize::from_le_bytes(data.try_into().map_err(|_| {
+            Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint restore",
+                path: None,
+            })
+        })?);
+        Ok(())
     }
 }
 
 impl Checkpoint for i32 {
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        Ok(self.to_le_bytes().to_vec())
     }
 
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        *self = i32::from_le_bytes(data.try_into().map_err(|_| {
+            Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint restore",
+                path: None,
+            })
+        })?);
+        Ok(())
     }
 }
 
@@ -374,23 +397,69 @@ where
 
 impl<T> Checkpoint for Option<T>
 where
-    T: Checkpoint,
+    T: Checkpoint + Default,
 {
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        match self {
+            None => Ok(vec![0u8]),
+            Some(val) => {
+                let mut buf = vec![1u8];
+                buf.extend(val.checkpoint()?);
+                Ok(buf)
+            }
+        }
     }
 
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        if data.is_empty() {
+            return Err(Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint restore",
+                path: None,
+            }));
+        }
+        match data[0] {
+            0 => {
+                *self = None;
+                Ok(())
+            }
+            1 => {
+                let mut val = T::default();
+                val.restore(&data[1..])?;
+                *self = Some(val);
+                Ok(())
+            }
+            _ => Err(Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint restore",
+                path: None,
+            })),
+        }
     }
 }
 
-impl<T, D: ?Sized> Checkpoint for TypedBox<T, D> {
+impl<T, D> Checkpoint for TypedBox<T, D>
+where
+    D: DataTrait + ?Sized,
+    T: DBData + Erase<D>,
+{
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        let val: &T = self;
+        let mut s = Serializer::default();
+        SerializeDyn::serialize(val, &mut s).map_err(|_| {
+            Error::from(StorageError::StdIo {
+                kind: ErrorKind::InvalidData,
+                operation: "checkpoint serialize",
+                path: None,
+            })
+        })?;
+        let fbuf = s.into_serializer().into_inner();
+        Ok(fbuf.into_vec())
     }
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        let val: &mut T = self;
+        unsafe { val.deserialize_from_bytes(data, 0) };
+        Ok(())
     }
 }
 
@@ -410,11 +479,15 @@ impl Checkpoint for dyn dynamic::data::Data + 'static {
 
 impl Checkpoint for dyn DataTyped<Type = u64> + 'static {
     fn checkpoint(&self) -> Result<Vec<u8>, Error> {
-        todo!()
+        let mut s = Serializer::default();
+        let _r = self.serialize(&mut s).unwrap();
+        let fbuf = s.into_serializer().into_inner();
+        Ok(fbuf.into_vec())
     }
 
-    fn restore(&mut self, _data: &[u8]) -> Result<(), Error> {
-        todo!()
+    fn restore(&mut self, data: &[u8]) -> Result<(), Error> {
+        unsafe { self.deserialize_from_bytes(data, 0) };
+        Ok(())
     }
 }
 
@@ -654,5 +727,117 @@ mod test {
         let min_checkpoints = one_extra.gc();
         // Verify that this is a valid minimum checkpoint state.
         min_checkpoints.precondition();
+    }
+
+    mod checkpoint_trait_tests {
+        use super::super::Checkpoint;
+
+        #[test]
+        fn test_isize_checkpoint_restore() {
+            let val: isize = 42;
+            let data = val.checkpoint().unwrap();
+            let mut restored: isize = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+
+            let val: isize = -123456789;
+            let data = val.checkpoint().unwrap();
+            let mut restored: isize = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+
+            let val: isize = 0;
+            let data = val.checkpoint().unwrap();
+            let mut restored: isize = 99;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
+
+        #[test]
+        fn test_isize_restore_invalid_length() {
+            let mut val: isize = 0;
+            assert!(val.restore(&[1, 2, 3]).is_err());
+        }
+
+        #[test]
+        fn test_usize_checkpoint_restore() {
+            let val: usize = 999;
+            let data = val.checkpoint().unwrap();
+            let mut restored: usize = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+
+            let val: usize = usize::MAX;
+            let data = val.checkpoint().unwrap();
+            let mut restored: usize = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
+
+        #[test]
+        fn test_usize_restore_invalid_length() {
+            let mut val: usize = 0;
+            assert!(val.restore(&[]).is_err());
+        }
+
+        #[test]
+        fn test_i32_checkpoint_restore() {
+            let val: i32 = -42;
+            let data = val.checkpoint().unwrap();
+            let mut restored: i32 = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+
+            let val: i32 = i32::MIN;
+            let data = val.checkpoint().unwrap();
+            let mut restored: i32 = 0;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
+
+        #[test]
+        fn test_i32_restore_invalid_length() {
+            let mut val: i32 = 0;
+            assert!(val.restore(&[1, 2]).is_err());
+        }
+
+        #[test]
+        fn test_option_some_checkpoint_restore() {
+            let val: Option<i32> = Some(42);
+            let data = val.checkpoint().unwrap();
+            let mut restored: Option<i32> = None;
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
+
+        #[test]
+        fn test_option_none_checkpoint_restore() {
+            let val: Option<i32> = None;
+            let data = val.checkpoint().unwrap();
+            let mut restored: Option<i32> = Some(99);
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
+
+        #[test]
+        fn test_option_restore_empty_data() {
+            let mut val: Option<i32> = None;
+            assert!(val.restore(&[]).is_err());
+        }
+
+        #[test]
+        fn test_option_restore_invalid_tag() {
+            let mut val: Option<i32> = None;
+            assert!(val.restore(&[2, 0, 0, 0, 0]).is_err());
+        }
+
+        #[test]
+        fn test_box_checkpoint_restore() {
+            let val: Box<isize> = Box::new(77);
+            let data = val.checkpoint().unwrap();
+            let mut restored: Box<isize> = Box::new(0);
+            restored.restore(&data).unwrap();
+            assert_eq!(val, restored);
+        }
     }
 }
